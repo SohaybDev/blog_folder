@@ -29,6 +29,11 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_TAGLINE,
+  // Google Search Console ownership (HTML-tag method) for blog-folder-blog.vercel.app.
+  // Keep it: removing the tag un-verifies the property.
+  verification: {
+    google: "qx1ucNOPlSOqj2IZOA3yqCm8x0UWAVgKpSaRewW_AT8",
+  },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

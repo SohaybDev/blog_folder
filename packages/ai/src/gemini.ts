@@ -55,9 +55,9 @@ const SPORT_BRIEFS: Record<
     role: "a cricket journalist",
     eventNoun: "match",
     previewFocus:
-      "the two teams, the venue's typical conditions, and what will decide the contest",
+      "the two teams, the venue's typical conditions, and what will decide the contest — plus where the series stands going in, but only if the facts carry a series scoreline",
     reportFocus:
-      "how the two innings totals shaped the result, what the margin says about each side, and what it means for the tournament — naming individual players only if the facts below name them, since some sources supply team totals without a per-player scorecard",
+      "how the innings totals shaped the result (two innings in a limited-overs match, up to four in a Test), what the margin says about each side, and what it means for the tournament — naming individual players only if the facts below name them, since some sources supply team totals without a per-player scorecard",
     tagHint: "team names, the format, the tournament name",
   },
   motorsport: {

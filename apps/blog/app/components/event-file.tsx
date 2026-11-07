@@ -8,12 +8,16 @@ interface Innings {
   team: string;
   runs: number;
   wickets?: number;
+  /** Set when the side closed the innings itself, which only Tests do. */
+  declared?: boolean;
 }
 
-/** "171/4", or plain "171" when the side was not bowled out and the source
- *  didn't record wickets. */
+/** "171/4", "290/5d" for a declaration, or plain "171" when the side was
+ *  bowled out — standard scorecard notation, where a bare total means all out
+ *  and the source records no wicket count for it. */
 function scoreOf(innings: Innings): string {
-  return innings.wickets === undefined ? String(innings.runs) : `${innings.runs}/${innings.wickets}`;
+  if (innings.wickets === undefined) return String(innings.runs);
+  return `${innings.runs}/${innings.wickets}${innings.declared ? "d" : ""}`;
 }
 
 /**
@@ -78,12 +82,15 @@ export function EventFile({ match }: { match: RawMatch }) {
         ))}
       </dl>
 
-      {innings.length === 2 && (
+      {/* A limited-overs match has two innings; a Test has three or four, and
+          the same side bats twice — so the list is keyed by position, not by
+          team name. */}
+      {innings.length >= 2 && (
         <div className="mx-auto mt-8 max-w-md text-left">
           <p className="label-sm border-b border-rule pb-2 text-muted">Scoreline</p>
           <ol className="divide-y divide-rule">
-            {innings.map((entry) => (
-              <li key={entry.team} className="flex items-baseline gap-3 py-2">
+            {innings.map((entry, index) => (
+              <li key={`${entry.team}-${index}`} className="flex items-baseline gap-3 py-2">
                 <span className="min-w-0 flex-1 text-[0.9375rem] leading-snug">{entry.team}</span>
                 <span className="font-display shrink-0 text-sm font-bold text-vermillion">
                   {scoreOf(entry)}

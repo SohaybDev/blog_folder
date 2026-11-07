@@ -3,10 +3,11 @@ from datetime import datetime, timezone
 from src.db import backfill_missing_sport, save_raw_match
 from src.fetcher import ScrapeBlocked
 from src.items import InvalidMatch, validate_match
-from src.sources import allt20_fixtures, cpl_matches, f1_races
+from src.sources import allt20_fixtures, cpl_matches, f1_races, pakistan_limited_overs, pakistan_tests
 from src.trigger import trigger_content_generation
 
-SOURCES = [allt20_fixtures, cpl_matches, f1_races]  # add more scraper adapters here as they're built
+# add more scraper adapters here as they're built
+SOURCES = [allt20_fixtures, cpl_matches, f1_races, pakistan_tests, pakistan_limited_overs]
 
 
 def run() -> None:
@@ -47,6 +48,9 @@ def run() -> None:
 
     print(f"Done. {saved} saved, {skipped} skipped.")
 
+    if saved > 0:
+        trigger_content_generation()
+
 
 def _describe(match: dict) -> str:
     """Short per-record summary — mainly so a run makes it obvious whether
@@ -61,9 +65,6 @@ def _describe(match: dict) -> str:
     if scorecard.get("result"):
         return f"result: {scorecard['result']}"
     return f"fixture only, {len(match.get('sourceImages', []))} image urls"
-
-    if saved > 0:
-        trigger_content_generation()
 
 
 if __name__ == "__main__":

@@ -69,7 +69,14 @@ export async function POST(request: NextRequest) {
   await connectToDatabase();
   const rawMatches = await selectBatch();
 
-  const results: Array<{ matchId: string; postId?: string; status?: string; error?: string }> = [];
+  const results: Array<{
+    matchId: string;
+    postId?: string;
+    status?: string;
+    error?: string;
+    /** Set when the post was written but a non-essential follow-up failed. */
+    warning?: string;
+  }> = [];
 
   for (const match of rawMatches) {
     try {
@@ -102,11 +109,21 @@ export async function POST(request: NextRequest) {
 
       await RawMatchModel.findByIdAndUpdate(match._id, { status: "processed" });
 
+      // Cache invalidation, not part of writing the post. Letting it throw
+      // into the catch below reported a post that had been created, published
+      // and marked `processed` as a failed match — so a run against a blog
+      // that was merely unreachable looked like a run that generated nothing.
+      let warning: string | undefined;
       if (status === "published") {
-        await notifyBlogToRevalidate(post.slug);
+        try {
+          await notifyBlogToRevalidate(post.slug);
+        } catch (err) {
+          warning = `published, but revalidating the blog failed: ${(err as Error).message}`;
+          console.warn(`${post.slug}: ${warning}`);
+        }
       }
 
-      results.push({ matchId: String(match._id), postId: String(post._id), status });
+      results.push({ matchId: String(match._id), postId: String(post._id), status, warning });
     } catch (err) {
       results.push({ matchId: String(match._id), error: (err as Error).message });
     }

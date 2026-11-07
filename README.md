@@ -102,13 +102,46 @@ fixtures, but 6 of those are ceremonies and playoff slots whose teams are still
 `—`; the adapter skips them deliberately (`len(teams) < 2`) rather than letting
 Gemini preview "Rank 1 vs Rank 2".
 
+**Test cricket — `scraper/src/sources/pakistan_tests.py`**, reading the
+Wikipedia tour article for each series in `TOURS` (currently Pakistan's 2026
+tour of England). There is no keyless factual feed for international Tests:
+TheSportsDB carries franchise T20 leagues and county cricket but no Test
+competition for any country, and the two obvious sites are the ones already
+ruled out below. `/wiki/<Article>` is explicitly allowed for the wildcard user
+agent while `/w/api.php` and `/api/` are not, so this reads the rendered
+article rather than the MediaWiki API. Text is CC BY-SA 4.0, credited per
+article through `scorecard.attribution`.
+
+A Test has three states in that template and they must not be conflated: no
+innings and no result line is a fixture (preview); innings but no bolded result
+line is a match in progress, which the adapter **holds** for a later run rather
+than writing up either way; a result line is a report. Unlike `cpl_matches`, an
+empty `winner` must not disqualify a result — a drawn Test is a complete
+outcome with no winner.
+
+Two things the adapter has to normalise. The template lists the side batting
+first on the left, which flips between Tests of the same series, so `teams` is
+ordered host-first (`TOURS[].host`) and the batting order kept in
+`scorecard.battingFirst`. And `date` is stored as the ISO start date, not the
+displayed "9–13 September 2026" range — the admin app's preview horizon runs
+`Date.parse` over that field, and a range yields `NaN`, which silently drops an
+upcoming Test from generation. The human range stays in `scorecard.dates`.
+`scorecard.seriesBefore` carries the series scoreline as it stood *going into*
+each Test, for the same anachronism reason the F1 adapter only quotes
+standings for an upcoming race.
+
 `example_source.py` is an unfilled template kept as a starting point for adding
 another source. Note that ESPN Cricinfo (403s all automated requests via its
 CDN) and Cricbuzz (`Disallow: /` for generic bots) were both checked and are
 not scrapeable.
 
 `src/fetcher.py` handles robots.txt compliance, throttling and retry/backoff —
-the three Scrapy downloader-middleware behaviours worth having at this size.
+the three Scrapy downloader-middleware behaviours worth having at this size. It
+reads robots.txt with the scraper's own User-Agent rather than through
+`RobotFileParser.read()`, which fetches as `Python-urllib/3.x`: Wikipedia 403s
+that agent, and a 403 on robots.txt is read as "everything is disallowed", so a
+site that allows us was being skipped over the identity of the robots request
+itself. A genuine 403 still denies.
 `src/items.py` validates each scrape before it reaches MongoDB (Scrapy's item
 pipeline role). If this grows to many sites or thousands of pages, move to
 Scrapy proper rather than extending these: its scheduler, request fingerprinting

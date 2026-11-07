@@ -56,7 +56,7 @@ export const SPORT_META: Record<Sport, SportMeta> = {
     label: "Cricket",
     competition: "Caribbean Premier League · 2026",
     blurb:
-      "Match-by-match coverage of the Caribbean Premier League, written from the published scorecards — plus the Asian Legends League schedule.",
+      "Match-by-match coverage of the Caribbean Premier League and Pakistan's Test tours, written from the published scorecards — plus the Asian Legends League schedule.",
     eventNoun: "match",
     scheduleLabel: "Season fixtures",
     dataCredit: {

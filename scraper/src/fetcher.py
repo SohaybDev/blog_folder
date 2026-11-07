@@ -35,8 +35,29 @@ def _robots_for(url: str) -> RobotFileParser:
         parser = RobotFileParser()
         parser.set_url(f"{root}/robots.txt")
         try:
-            parser.read()
-        except Exception:
+            # Deliberately not `parser.read()`: that fetches through urllib,
+            # which announces itself as "Python-urllib/3.x". Wikipedia 403s
+            # that agent, and RobotFileParser reads a 403 on robots.txt as
+            # "everything is disallowed" — so a site that allows us was being
+            # skipped over the identity of the robots request itself. The rules
+            # have to be read with the same User-Agent the scrape will use.
+            response = requests.get(
+                f"{root}/robots.txt",
+                headers={"User-Agent": USER_AGENT},
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+            if response.status_code in (401, 403):
+                # Access to the rules is refused; that is not permission.
+                parser.disallow_all = True
+            elif 400 <= response.status_code < 500:
+                # No robots.txt published, so nothing is disallowed.
+                parser.allow_all = True
+            else:
+                response.raise_for_status()
+                # Wikipedia serves robots.txt with a BOM, which would otherwise
+                # become part of the first directive.
+                parser.parse(response.text.lstrip("﻿").splitlines())
+        except requests.RequestException:
             # An unreadable robots.txt is not permission — treat as disallowed.
             parser.disallow_all = True
         _robots_cache[root] = parser
